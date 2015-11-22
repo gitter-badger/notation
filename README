@@ -1,0 +1,7 @@
+A specification for describing a natural or constructed language so it is interpretable for a computer program.
+For now this is only phonology related, but I plan adding features for morphology and syntax as well, so a program could
+eventually use such documents to translate glosses in a language. I tried to wirte down the notations as convenient for
+linguists as possible, but also understandable for not-so-liguistic people.
+
+All improvement and feedback is welcome! I am also looking for a name for this specification/notation language.
+See Tenguru.not for the specification and examples.

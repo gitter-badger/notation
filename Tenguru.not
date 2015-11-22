@@ -1,0 +1,162 @@
+# LANGUAGE NOTATION SPECIFICATION V0.1
+# A specification for describing a natural or constructed language so it is interpretable for a computer system.
+# For now this is only phonology related, but I plan adding features for morphology and syntax as well, so a program could
+# eventually use such documents to translate glosses in a language. I tried to wirte down the notations as convenient for
+# linguists as possible, but also understandable for not-so-liguistic people.
+
+# Comments are written on a line with an initial number sign.
+# Lines can optionally begin or end with whitespace, which is omitted in parsing.
+
+# Every notation class can have an optional name (although useful in generations) and optional abbreviation,
+# which are both unique in the document. All classes have some content attached to it, written after a semicolon.
+#   Class: <content>
+#   Class <name>: <content>
+#   Class <name> -> <abbreviation>: <content>
+
+# The following classes of notation are defined:
+
+# Some meta tags for information, like Language, Author, Version
+
+# TOKEN: defines a set of terminal phonemes (often in IPA) that make up a word. Treated as a special case
+# of rules. While using in generation rules, an arbitrary element of this token.
+#   Token <name>: <list of tokens separated by spaces, or other defined tokens>
+# Examples:
+#   Token Plosive -> P: p t k
+#   Token Fricative -> F: f s x
+#   Token Consonant: {Token Plosive} {Token Fricative}
+#   Token -> C: {P} {F}
+
+# SOUND CHANGE: defines an optionally conditional sound change. Sound changes are applied by accessing them in a rule or by 
+# applying all sound change. The can optionally carry a condition. Optionally the 'if' can be replaced with a slash (/).
+# The empty set symbol or Ø (capital O with slash) refers to an empty spot
+#   Sound change <name>: <before> > <after> if <condition>
+#   Sound change <name>: <before> > <after> / <condition>
+# Special cases, the following rules are semantically equal:
+# - Deletion: 
+#     a > Ø if C
+#     erase a if C
+# - Insertion: 
+#     Ø > a if C
+#     insert a if C
+# Examples:
+#   A sound change changing all p's in f's:
+#     Sound change: p > f
+#   Changing all p's in pf's when followed by an i, __ (double underscore) refers to the checked part (<before>):
+#     Sound change: p > pf if __ i
+#   Change all t's into d's when not followed by an i or u:
+#     Sound change: t > d / not |i u|
+#   Change all word-final m's to n's:
+#     Sound change: m > n / __ #
+#   Equal with word-initial:
+#     Sound change: m > n if # __
+#   Change all k's to x's if preceded by two vowels:
+#     Sound change: k > x if {2x Token Vowel} __
+
+# ORTHOGRAPHY: Changes phonemes into another grapheme after all generation is done, while printing. Orthography can be stacked
+# in one definition.
+#   Orthography <name>: <grapheme> [<phoneme>], <grapheme> [<phoneme>], ...
+# Orthography can also take conditions or erase phonemes, like in Sound change:
+#   Orthography: t [ts] / __ |i u|
+#   Orthography: erase m if # __ n
+# Examples:
+#   Orthography: ph [f]
+#   Orthography: kh [x], ü [y]
+
+# RULE: represents a phonotaxis rule and is used for generating words. It can contain other rules or token
+# definitions, optionally quantified, and/or sound changes.
+#   Rule <name>: <rule> | <token> | <sound change>
+# The expression in the content can be made up of a sequence of the following parts:
+# - literal: A literal text that will be inserted
+# - (3x literal): A quantified literal (NOT DEFINITIVE NOTATION, SUGGESTIONS ARE WELCOME)
+# - {Rule <name>}: reference to another rule (recursions are allowed with quantification)
+# - {Token <name>}: reference to a token
+# - {Sound change <name>}: reference to a sound change
+# - {Sound changes}: applies all defined sound changes (except local ones}
+# - |Item1 Item2|: a list of possible combinations, arbitrarily chosen at generation
+# - |{Token A} {Token B}|: Chooses a random token from the two definitions
+# - Optionally new local classes can be defined in a rule as well, like in the example
+#     Rule: {Token: a b c} {2x Token: x y z}
+#   This is especially handy when it comes for conditional rules, like inserting a [j] only if the preceding consonant is
+#   plosive:
+#     Rule: {Token Consonant} {Sound change: insert j[?] if {Token PlosiveConsonant} __ #}
+# These parts can optionally be quantified:
+# - {2x A}: Exactly 2 times A
+# - {1~4x A}: Between 1 and 4 times A (randomly chosen)
+# - {0~3x A}: Between 0 and 3 times A
+# - {? A}: Optional A, same as {0~1x A}
+# - {A}: Exactly one time A
+# Examples:
+#   A rule generating from 1 to 3 syllable rules:
+#     Rule One: {Rule Syllable 1~3x}
+#   A rule generating a consonant token followed by a vowel token:
+#     Rule Two: {Token Consonant} {Token Vowel}
+#   A rule generating an optional (note the question mark) C followed by a V, which can both represent a rule,
+#   token or sound change:
+#     Rule Three -> R: {C ?} {V}
+#   A rule generating 3 of the above specified rule (note the R abbreviation)
+#     Rule Four: {R 3x}
+#   A rule generating a syllable rule, afterwards applying the Palatization sound change to the whole generation
+#     Rule Five: {Rule Syllable} {Sound change Palatalization}
+
+#######################################################################################################################
+# The following gives a working example of the notation
+
+# Tengu are bird people from Japanese mythology. Something along the veins of a oriental language perhaps?
+# Race Info: http://www.d20pfsrd.com/races/other-races/featured-races/arg-tengu
+  Version: 0.1
+  Language: Tenguru
+  Author: Dennis
+
+# Notable features:
+# - Japanese-like phonology and phonotactics
+# - Four genders: animate, inanimate, sacred, abstract
+# - Morphology is highly analytic, but not isolating
+# - Derivation by reduplication
+# - Stress/accent can distinguish words
+
+# Tenguru uses 20 graphemes. Some sounds are written with two letters, but they should be considered one 
+# letter: a b d e g i y k m n o p r s sh t u w z zh.
+  Token PlosiveConsonant: p b t d k g
+  Token FricativeConsonant: f v s z
+  Token OtherConsonant: m n s z ʃ ʒ ʋ j r
+# The symbols after the arrow is an abbreviation for the token or rule  
+  Token Consonant -> C: {Token PlosiveConsonant} {Token OtherConsonant}
+  Token Vowel -> V: a e i o u
+  Orthography: sh [ʃ], zh [ʒ], w [ʋ], y [j]
+
+# Affricates (and other sound changes)
+# - t before a i or u is pronounced /ts/, otherwise /t/.
+  Sound change: t > ts if __ |i u|
+# Sound change: Ø > s if t __ |i u|
+# Sound change: insert s if t __ |i u|
+  Orthography: t [ts]
+
+# - d before a i or u is pronounced /dz/, otherwise /d/.
+  Sound change: d > dz if __ |i u|
+  Orthography: d [dz]
+
+# - n at the end of a syllable is pronounced /ŋ/ before a vowel, otherwise /n/.
+# - ng is pronounced /ŋg/, as in the word Tengu.
+  Sound change Palatalization: n > ŋ if __ |{Token Vowel} g|
+  Orthography: n [ŋ]
+  
+# Other sample sound changes would be:
+# Sound change: 
+
+# Tengu uses the simple syllable structure C(y)V. This means a syllable consists of an obliged consonant, 
+# followed by an optional y (if the consonant is plosive), then a obliged vowel. The letter n can optionally 
+# end a word.
+  Rule Syllable: 
+  - {Token Consonant}
+  - {Sound change: insert j[?] if {Token PlosiveConsonant} __ #}
+  - {Token Vowel}
+  - n [?]
+  - {Sound changes}
+  
+# One could also write this rule as
+# Rule Syllable: {C} {Sound change: insert j[?] if {Token PlosiveConsonant} __ #} {V} n[?] {Sound changes}
+
+  Rule Word:
+  - {Rule Syllable 3x}
+  - {Sound change Palatalization}
+  
